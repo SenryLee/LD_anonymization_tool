@@ -59,7 +59,7 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/your-username/desensitization-tool.git
+git clone [https://github.com/SenryLee/desensitization-tool.git]
 cd desensitization-tool/source
 
 # 2. 安装依赖
@@ -242,8 +242,8 @@ PREDEFINED_PATTERNS = {
 
 ## 👨‍💻 作者
 
-- **开发者**：[您的名字]
-- **项目链接**：[https://github.com/your-username/desensitization-tool](https://github.com/your-username/desensitization-tool)
+- **开发者**：SENRYLEE
+- **项目链接**：[https://github.com/SenryLee/desensitization-tool.git](https://github.com/SenryLee/desensitization-tool.git)
 
 ---
 
@@ -260,8 +260,8 @@ PREDEFINED_PATTERNS = {
 
 ## 📮 联系方式
 
-- **问题反馈**：[GitHub Issues](https://github.com/your-username/desensitization-tool/issues)
-- **邮件**：[your-email@example.com]
+- **问题反馈**：[GitHub Issues][(https://github.com/SenryLee/desensitization-tool.git)
+
 
 ---
 
