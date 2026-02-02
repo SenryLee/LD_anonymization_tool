@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定义词脱敏工具 - 本地安全处理</title>
+    <meta name="description" content="智能文本脱敏工具，支持多种脱敏模式，所有处理在本地浏览器完成，保护数据隐私">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============= CSS Variables ============= */
+        :root {
+            /* Colors */
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.7);
+            --bg-elevated: rgba(31, 41, 55, 0.5);
+            --bg-input: rgba(10, 14, 26, 0.8);
+
+            --border-color: rgba(99, 102, 241, 0.2);
+            --border-hover: rgba(99, 102, 241, 0.4);
+            --border-focus: rgba(99, 102, 241, 0.6);
+
+            --accent-primary: #818cf8;
+            --accent-secondary: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.15);
+
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+
+            --success: #34d399;
+            --success-bg: rgba(52, 211, 153, 0.1);
+            --warning: #fbbf24;
+            --warning-bg: rgba(251, 191, 36, 0.1);
+            --error: #f87171;
+            --error-bg: rgba(248, 113, 113, 0.1);
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+            --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.3);
+            --shadow-glow-sm: 0 0 20px rgba(99, 102, 241, 0.2);
+
+            /* Animation */
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.3s ease;
+            --transition-slow: 0.5s ease;
+        }
+
+        /* ============= Reset & Base ============= */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Background Effects */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+                linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            pointer-events: none;
+            z-index: -2;
+        }
+
+        /* Animated Grid Background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        /* ============= Layout ============= */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* ============= Header ============= */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .badge-icon {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary) 50%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* ============= Grid Layout ============= */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (min-width: 1200px) {
+            .grid {
+                grid-template-columns: 1.3fr 1fr 1fr;
+            }
+        }
+
+        /* ============= Cards ============= */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-lg), var(--shadow-glow-sm);
+            transition: all var(--transition-normal);
+            animation: fadeInUp 0.6s ease-out backwards;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+        }
+
+        .card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-xl), var(--shadow-glow);
+            transform: translateY(-2px);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+            border-radius: 10px;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+
+        /* ============= Form Elements ============= */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        textarea,
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.875rem 1rem;
+            color: var(--text-primary);
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            transition: all var(--transition-fast);
+            resize: vertical;
+        }
+
+        textarea {
+            min-height: 120px;
+        }
+
+        textarea:focus,
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        textarea::placeholder,
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* File Input */
+        .file-drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .file-drop-zone:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-elevated);
+        }
+
+        .file-drop-zone.dragover {
+            border-color: var(--accent-primary);
+            background: var(--accent-glow);
+        }
+
+        .file-drop-zone input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .file-text {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* ============= Buttons ============= */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, var(--success) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(52, 211, 153, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 211, 153, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ============= Advanced Options ============= */
+        .advanced-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            margin-bottom: 1rem;
+        }
+
+        .advanced-toggle:hover {
+            border-color: var(--border-hover);
+        }
+
+        .advanced-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height var(--transition-normal);
+        }
+
+        .advanced-content.open {
+            max-height: 1000px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .checkbox-group:hover {
+            border-color: var(--border-hover);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* ============= Status Messages ============= */
+        .status {
+            font-size: 0.875rem;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-info {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .status-success {
+            background: var(--success-bg);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .status-error {
+            background: var(--error-bg);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+
+        /* ============= Downloads Area ============= */
+        .downloads {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .download-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all var(--transition-fast);
+        }
+
+        .download-item:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-input);
+            transform: translateX(4px);
+        }
+
+        .download-icon {
+            font-size: 1.5rem;
+        }
+
+        .download-info {
+            flex: 1;
+        }
+
+        .download-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .download-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* ============= Stats Grid ============= */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .stat-item {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* ============= Preview Area ============= */
+        .preview {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .preview-text {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        /* ============= Animations ============= */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ============= Loading Spinner ============= */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* ============= Helper Classes ============= */
+        .hidden {
+            display: none !important;
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            line-height: 1.5;
+        }
+
+        /* ============= Responsive ============= */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem 1rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="badge">
+                <span class="badge-icon"></span>
+                本地安全处理 · 数据不离开浏览器
+            </div>
+            <h1>🔒 定义词脱敏工具</h1>
+            <p class="subtitle">
+                智能文本脱敏 · 支持多种脱敏模式 · 正则匹配 · 加密还原<br>
+                所有处理在本地浏览器完成，您的数据永远安全
+            </p>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="grid">
+            <!-- Card 1: Text Input -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-icon">📝</div>
+                    <h2 class="card-title">输入文本</h2>
+                </div>
+
+                <div class="form-group">
+                    <label for="sourceText">原始文本</label>
+                    <textarea
+                        id="sourceText"
+                        placeholder="在这里粘贴需要脱敏的内容..."
+                    >客户姓名：张三
+身份证号：110101199003071234
+手机号：13800138000
+邮箱：zhangsan@example.com
+银行卡号：6222021234567890123
+住址：北京市朝阳区望京街道 88 号
+合同金额：¥128,000 元</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>或上传文件</label>
+                    <div class="file-drop-zone" id="fileDropZone">
+                        <input type="file" id="sourceFile" accept=".txt,.doc,.docx,.pdf">
+                        <span class="file-icon">📄</span>
+                        <div class="file-text">拖拽文件到此处或点击选择</div>
+                        <div class="hint">支持 txt / docx / pdf</div>
+                    </div>
+                </div>
+
+                <!-- Advanced Options -->
+                <div class="advanced-toggle" onclick="toggleAdvanced()">
+                    <span>⚙️</span>
+                    <span>高级选项</span>
+                </div>
+
+                <div class="advanced-content" id="advancedContent">
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="maskMode">脱敏模式</label>
+                        <select id="maskMode">
+                            <option value="full">全量替换（张三 → ***）</option>
+                            <option value="partial">部分遮蔽（张三 → 张*）</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="preserveCharsGroup" class="hidden">
+                        <label for="preserveChars">保留字符数</label>
+                        <input type="number" id="preserveChars" value="1" min="1" max="5">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="enableSmart">
+                            <span>🤖 启用智能识别</span>
+                        </label>
+                        <div class="hint">自动识别手机号、身份证、邮箱、银行卡等</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="keywords">脱敏关键词</label>
+                    <textarea
+                        id="keywords"
+                        placeholder="例如：张三, 13800138000, zhangsan@example.com"
+                        style="min-height: 80px;"
+                    ></textarea>
+                    <div class="hint">支持换行、逗号、分号分隔</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">🔑 还原密码</label>
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="设置密码用于加密原始文本（至少6位）"
+                    >
+                </div>
+
+                <button class="btn btn-primary" id="maskBtn" onclick="handleMask()">
+                    🚀 开始脱敏
+                </button>
+
+                <div class="status status-info" id="maskStatus">
+                    等待输入...
+                </div>
+            </section>
+
+            <!-- Card 2: Results -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-icon">📦</div>
+                    <h2 class="card-title">脱敏结果</h2>
+                </div>
+
+                <div class="downloads" id="downloads">
+                    <div class="hint" style="text-align: center; padding: 2rem;">
+                        点击左侧"开始脱敏"按钮后，这里将显示结果
+                    </div>
+                </div>
+            </section>
+
+            <!-- Card 3: Restore -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-icon">🔓</div>
+                    <h2 class="card-title">还原原文</h2>
+                </div>
+
+                <div class="form-group">
+                    <label>选择加密还原文件</label>
+                    <div class="file-drop-zone">
+                        <input type="file" id="restoreFile" accept=".json">
+                        <span class="file-icon">🔐</span>
+                        <div class="file-text">点击选择 .json 文件</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="restorePassword">🔑 还原密码</label>
+                    <input
+                        type="password"
+                        id="restorePassword"
+                        placeholder="输入生成时设置的密码"
+                    >
+                </div>
+
+                <button class="btn btn-success" id="restoreBtn" onclick="handleRestore()">
+                    🔓 解密并下载原文
+                </button>
+
+                <div class="status status-info" id="restoreStatus">
+                    等待加密文件...
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.js"></script>
+
+    <script>
+        // ============= Configuration =============
+        const CONFIG = {
+            MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
+            PASSWORD_MIN_LENGTH: 6
+        };
+
+        // ============= DOM Elements =============
+        const sourceText = document.getElementById('sourceText');
+        const sourceFile = document.getElementById('sourceFile');
+        const fileDropZone = document.getElementById('fileDropZone');
+        const keywords = document.getElementById('keywords');
+        const password = document.getElementById('password');
+        const maskBtn = document.getElementById('maskBtn');
+        const maskStatus = document.getElementById('maskStatus');
+        const downloads = document.getElementById('downloads');
+
+        const restoreFile = document.getElementById('restoreFile');
+        const restorePassword = document.getElementById('restorePassword');
+        const restoreBtn = document.getElementById('restoreBtn');
+        const restoreStatus = document.getElementById('restoreStatus');
+
+        const maskMode = document.getElementById('maskMode');
+        const preserveChars = document.getElementById('preserveChars');
+        const enableSmart = document.getElementById('enableSmart');
+        const advancedContent = document.getElementById('advancedContent');
+
+        // ============= Utilities =============
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+
+        function formatTimestamp() {
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+        }
+
+        function showStatus(element, message, type = 'info') {
+            element.className = `status status-${type}`;
+            element.innerHTML = type === 'loading'
+                ? `<span class="spinner"></span> ${message}`
+                : message;
+        }
+
+        // ============= File Reading =============
+        function readFileText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file, 'utf-8');
+            });
+        }
+
+        function readFileBuffer(file) {
+            return new Promise((resolve, reject) => {
+                if (file.size > CONFIG.MAX_FILE_SIZE) {
+                    reject(new Error(`文件过大（${(file.size / 1024 / 1024).toFixed(1)}MB），最大支持 ${CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB`));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // ============= Text Extraction =============
+        async function extractDocxText(file) {
+            const buffer = await readFileBuffer(file);
+            const result = await window.mammoth.extractRawText({ arrayBuffer: buffer });
+            return result.value || '';
+        }
+
+        async function extractPdfText(file) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+            const buffer = await readFileBuffer(file);
+            const loadingTask = pdfjsLib.getDocument({ data: buffer });
+            const pdf = await loadingTask.promise;
+            const pages = [];
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const text = content.items.map(item => item.str).join(' ');
+                pages.push(text);
+            }
+
+            return pages.join('\n\n');
+        }
+
+        async function extractDocText(file) {
+            const buffer = await readFileBuffer(file);
+            const bytes = new Uint8Array(buffer);
+            let text = '';
+
+            for (const byte of bytes) {
+                if (byte === 9 || byte === 10 || byte === 13) {
+                    text += '\n';
+                } else if (byte >= 32 && byte <= 126) {
+                    text += String.fromCharCode(byte);
+                }
+            }
+
+            return text.replace(/\n{3,}/g, '\n\n');
+        }
+
+        async function extractFileText(file) {
+            const ext = file.name.split('.').pop()?.toLowerCase();
+
+            if (ext === 'txt') return readFileText(file);
+            if (ext === 'docx') return extractDocxText(file);
+            if (ext === 'pdf') return extractPdfText(file);
+            if (ext === 'doc') return extractDocText(file);
+
+            throw new Error('不支持的文件格式');
+        }
+
+        // ============= Masking Functions =============
+        function normalizeKeywords(raw) {
+            if (!raw) return [];
+            return raw.split(/[\n,;，；]/)
+                .map(item => item.trim())
+                .filter(Boolean);
+        }
+
+        function maskTextFull(text, keyword, maskChar = '*') {
+            const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escaped, 'g');
+            return text.replace(regex, maskChar.repeat(keyword.length));
+        }
+
+        function maskTextPartial(text, keyword, preserveChars = 1, maskChar = '*') {
+            const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escaped, 'g');
+
+            return text.replace(regex, (match) => {
+                if (match.length <= preserveChars) return match;
+                return match.slice(0, preserveChars) + maskChar.repeat(match.length - preserveChars);
+            });
+        }
+
+        function maskTextRegex(text, pattern, preserveChars = 0, maskChar = '*') {
+            let count = 0;
+
+            const result = text.replace(new RegExp(pattern, 'g'), (match) => {
+                count++;
+                if (match.length <= preserveChars) return match;
+                return match.slice(0, preserveChars) + maskChar.repeat(match.length - preserveChars);
+            });
+
+            return { masked: result, count };
+        }
+
+        function applySmartDetection(text) {
+            const patterns = {
+                '手机号': { pattern: r'1[3-9]\d{9}', preserve: 3 },
+                '身份证号': { pattern: r'[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]', preserve: 6 },
+                '邮箱': { pattern: r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', preserve: 2 },
+                '银行卡号': { pattern: r'\b\d{16,19}\b', preserve: 4 },
+                'IP地址': { pattern: r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', preserve: 4 }
+            };
+
+            const stats = {};
+            let result = text;
+
+            for (const [name, config] of Object.entries(patterns)) {
+                const { masked, count } = maskTextRegex(result, config.pattern, config.preserve);
+                result = masked;
+                if (count > 0) stats[name] = count;
+            }
+
+            return { masked: result, stats };
+        }
+
+        function buildMaskedText(text, keywordsList, mode, preserveChars, maskChar, smart) {
+            let masked = text;
+            const stats = { manual: keywordsList.length, smart: {} };
+
+            // Apply manual keywords
+            if (keywordsList.length > 0) {
+                if (mode === 'full') {
+                    for (const word of keywordsList) {
+                        masked = maskTextFull(masked, word, maskChar);
+                    }
+                } else {
+                    for (const word of keywordsList) {
+                        masked = maskTextPartial(masked, word, preserveChars, maskChar);
+                    }
+                }
+            }
+
+            // Apply smart detection
+            if (smart) {
+                const result = applySmartDetection(masked);
+                masked = result.masked;
+                stats.smart = result.stats;
+            }
+
+            return { masked, stats };
+        }
+
+        // ============= Encryption/Decryption =============
+        async function deriveKey(passwordValue, salt) {
+            const baseKey = await crypto.subtle.importKey(
+                'raw',
+                encoder.encode(passwordValue),
+                { name: 'PBKDF2' },
+                false,
+                ['deriveKey']
+            );
+
+            return crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt,
+                    iterations: 120000,
+                    hash: 'SHA-256'
+                },
+                baseKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        async function encryptText(plain, passwordValue) {
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const key = await deriveKey(passwordValue, salt);
+            const encrypted = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv },
+                key,
+                encoder.encode(plain)
+            );
+
+            return {
+                iv: Array.from(iv),
+                salt: Array.from(salt),
+                data: Array.from(new Uint8Array(encrypted)),
+                createdAt: new Date().toISOString(),
+                version: '2.0'
+            };
+        }
+
+        async function decryptText(payload, passwordValue) {
+            const iv = new Uint8Array(payload.iv);
+            const salt = new Uint8Array(payload.salt);
+            const data = new Uint8Array(payload.data);
+            const key = await deriveKey(passwordValue, salt);
+            const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv },
+                key,
+                data
+            );
+            return decoder.decode(decrypted);
+        }
+
+        // ============= DOCX Generation =============
+        async function buildDocxBlob(text) {
+            const doc = new window.docx.Document({
+                sections: [{
+                    properties: {},
+                    children: text.split(/\n/).map(line => new window.docx.Paragraph(line))
+                }]
+            });
+            return window.docx.Packer.toBlob(doc);
+        }
+
+        // ============= Download Creation =============
+        function createDownload(name, blob, type) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = name;
+            link.className = 'download-item';
+
+            const size = (blob.size / 1024).toFixed(1);
+
+            link.innerHTML = `
+                <span class="download-icon">${type === 'json' ? '🔐' : '📄'}</span>
+                <div class="download-info">
+                    <div class="download-name">${name}</div>
+                    <div class="download-meta">${type.toUpperCase()} · ${size} KB</div>
+                </div>
+                <span>⬇️</span>
+            `;
+
+            downloads.appendChild(link);
+        }
+
+        function resetDownloads() {
+            downloads.innerHTML = '<div class="hint" style="text-align: center; padding: 2rem;">点击左侧"开始脱敏"按钮后，这里将显示结果</div>';
+        }
+
+        // ============= UI Interactions =============
+        function toggleAdvanced() {
+            advancedContent.classList.toggle('open');
+        }
+
+        // Mask mode change
+        maskMode.addEventListener('change', (e) => {
+            const group = document.getElementById('preserveCharsGroup');
+            if (e.target.value === 'partial') {
+                group.classList.remove('hidden');
+            } else {
+                group.classList.add('hidden');
+            }
+        });
+
+        // File drag and drop
+        fileDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('dragover');
+        });
+
+        fileDropZone.addEventListener('dragleave', () => {
+            fileDropZone.classList.remove('dragover');
+        });
+
+        fileDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleFileUpload(file);
+        });
+
+        sourceFile.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileUpload(file);
+        });
+
+        async function handleFileUpload(file) {
+            showStatus(maskStatus, '解析文件中...', 'loading');
+
+            try {
+                const content = await extractFileText(file);
+                sourceText.value = content;
+                showStatus(maskStatus, `✅ 已读取文件：${file.name}`, 'success');
+            } catch (error) {
+                showStatus(maskStatus, `❌ 文件解析失败：${error.message}`, 'error');
+            }
+        }
+
+        // ============= Main Handlers =============
+        async function handleMask() {
+            resetDownloads();
+            showStatus(maskStatus, '处理中...', 'loading');
+
+            const text = sourceText.value.trim();
+            const keywordsList = normalizeKeywords(keywords.value);
+            const pwd = password.value;
+            const mode = maskMode.value;
+            const preserve = parseInt(preserveChars.value) || 1;
+            const smart = enableSmart.checked;
+
+            // Validation
+            if (!text) {
+                showStatus(maskStatus, '❌ 请输入或上传需要脱敏的文本', 'error');
+                return;
+            }
+
+            if (keywordsList.length === 0 && !smart) {
+                showStatus(maskStatus, '❌ 请输入关键词或启用智能识别', 'error');
+                return;
+            }
+
+            if (!pwd) {
+                showStatus(maskStatus, '❌ 请设置还原密码', 'error');
+                return;
+            }
+
+            if (pwd.length < CONFIG.PASSWORD_MIN_LENGTH) {
+                showStatus(maskStatus, `❌ 密码长度至少 ${CONFIG.PASSWORD_MIN_LENGTH} 位`, 'error');
+                return;
+            }
+
+            try {
+                // Mask text
+                const { masked, stats } = buildMaskedText(
+                    text,
+                    keywordsList,
+                    mode,
+                    preserve,
+                    '*',
+                    smart
+                );
+
+                // Encrypt
+                const encrypted = await encryptText(text, pwd);
+                const stamp = formatTimestamp();
+
+                // Generate files
+                const maskedDocx = await buildDocxBlob(masked);
+
+                // Display results
+                downloads.innerHTML = '';
+
+                // Stats
+                const totalDetections = stats.manual + Object.values(stats.smart).reduce((a, b) => a + b, 0);
+                if (totalDetections > 0) {
+                    const statsDiv = document.createElement('div');
+                    statsDiv.className = 'stats-grid';
+
+                    if (stats.manual > 0) {
+                        statsDiv.innerHTML += `
+                            <div class="stat-item">
+                                <div class="stat-value">${stats.manual}</div>
+                                <div class="stat-label">关键词</div>
+                            </div>
+                        `;
+                    }
+
+                    for (const [name, count] of Object.entries(stats.smart)) {
+                        if (count > 0) {
+                            statsDiv.innerHTML += `
+                                <div class="stat-item">
+                                    <div class="stat-value">${count}</div>
+                                    <div class="stat-label">${name}</div>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    downloads.appendChild(statsDiv);
+                }
+
+                // Preview
+                const preview = document.createElement('div');
+                preview.className = 'preview';
+                const previewText = document.createElement('div');
+                previewText.className = 'preview-text';
+                previewText.textContent = masked.length > 500 ? masked.slice(0, 500) + '...' : masked;
+                preview.appendChild(previewText);
+                downloads.appendChild(preview);
+
+                // Downloads
+                createDownload(`masked_${stamp}.docx`, maskedDocx, 'docx');
+                createDownload(`restore_${stamp}.json`, new Blob([JSON.stringify(encrypted, null, 2)], { type: 'application/json' }), 'json');
+
+                showStatus(maskStatus, '✅ 脱敏完成！', 'success');
+            } catch (error) {
+                showStatus(maskStatus, `❌ 处理失败：${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        async function handleRestore() {
+            showStatus(restoreStatus, '解密中...', 'loading');
+
+            const file = restoreFile.files?.[0];
+            const pwd = restorePassword.value;
+
+            if (!file) {
+                showStatus(restoreStatus, '❌ 请选择加密还原文件', 'error');
+                return;
+            }
+
+            if (!pwd) {
+                showStatus(restoreStatus, '❌ 请输入还原密码', 'error');
+                return;
+            }
+
+            try {
+                const content = await readFileText(file);
+                const payload = JSON.parse(content);
+                const plain = await decryptText(payload, pwd);
+                const stamp = formatTimestamp();
+                const restoredDocx = await buildDocxBlob(plain);
+
+                // Create download link
+                const url = URL.createObjectURL(restoredDocx);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `restored_${stamp}.docx`;
+                link.className = 'download-item';
+                link.innerHTML = `
+                    <span class="download-icon">📄</span>
+                    <div class="download-info">
+                        <div class="download-name">restored_${stamp}.docx</div>
+                        <div class="download-meta">DOCX · ${(restoredDocx.size / 1024).toFixed(1)} KB</div>
+                    </div>
+                    <span>⬇️</span>
+                `;
+
+                restoreStatus.innerHTML = '';
+                restoreStatus.appendChild(link);
+                showStatus(restoreStatus, '✅ 解密成功！', 'success');
+            } catch (error) {
+                showStatus(restoreStatus, '❌ 解密失败：请检查密码或文件', 'error');
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
